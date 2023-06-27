@@ -1,15 +1,41 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { dbService } from "fbase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  onSnapshot,
+  orderBy,
+} from "firebase/firestore";
+import Nweet from "components/Nweet";
 
-const Home = () => {
+const Home = ({ userObj }) => {
   const [nweet, setNweet] = useState("");
+  const [nweets, setNweets] = useState([]);
+
+  useEffect(() => {
+    const q = query(
+      collection(dbService, "nweets"),
+      orderBy("createdAt", "desc")
+    );
+
+    onSnapshot(q, (snapshot) => {
+      const nweetArr = snapshot.docs.map((doc) => ({
+        id: doc.data(),
+        ...doc.data(),
+      }));
+      setNweets(nweetArr);
+    });
+  }, []);
+
   const onSubmit = async (event) => {
     event.preventDefault();
 
     await addDoc(collection(dbService, "nweets"), {
-      nweet,
+      text: nweet,
       createdAt: serverTimestamp(),
+      creatorId: userObj.uid,
     });
     setNweet("");
   };
@@ -31,6 +57,15 @@ const Home = () => {
         ></input>
         <input type="submit" value="Nweet" />
       </form>
+      <div>
+        {nweets.map((nweet) => (
+          <Nweet
+            key={nweet.id}
+            nweetObj={nweet}
+            isOwner={nweet.creatorId === userObj.uid}
+          />
+        ))}
+      </div>
     </div>
   );
 };
