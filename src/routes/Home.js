@@ -13,7 +13,7 @@ import Nweet from "components/Nweet";
 const Home = ({ userObj }) => {
   const [nweet, setNweet] = useState("");
   const [nweets, setNweets] = useState([]);
-
+  const [attachment, setAttachment] = useState();
   useEffect(() => {
     const q = query(
       collection(dbService, "nweets"),
@@ -22,7 +22,7 @@ const Home = ({ userObj }) => {
 
     onSnapshot(q, (snapshot) => {
       const nweetArr = snapshot.docs.map((doc) => ({
-        id: doc.data(),
+        id: doc.id,
         ...doc.data(),
       }));
       setNweets(nweetArr);
@@ -45,8 +45,28 @@ const Home = ({ userObj }) => {
     } = event;
     setNweet(value);
   };
+  const onFileChange = (event) => {
+    const {
+      target: { files },
+    } = event;
+
+    const theFiles = files[0];
+    const reader = new FileReader();
+
+    reader.onloadend = (finishedEvent) => {
+      const {
+        currentTarget: { result },
+      } = finishedEvent;
+      setAttachment(result);
+    };
+    if (theFiles) {
+      reader.readAsDataURL(theFiles);
+    }
+  };
+  const onClearAttachment = () => setAttachment(null);
+
   return (
-    <div>
+    <>
       <form onSubmit={onSubmit}>
         <input
           value={nweet}
@@ -54,8 +74,15 @@ const Home = ({ userObj }) => {
           type="text"
           placeholder="What's on your mind?"
           maxLength={120}
-        ></input>
+        />
+        <input type="file" accept="image/*" onClick={onFileChange} />
         <input type="submit" value="Nweet" />
+        {attachment && (
+          <div>
+            <img src={attachment} width="50px" height="50px" alt="" />
+            <button onClick={onClearAttachment}>Clear</button>
+          </div>
+        )}
       </form>
       <div>
         {nweets.map((nweet) => (
@@ -66,7 +93,7 @@ const Home = ({ userObj }) => {
           />
         ))}
       </div>
-    </div>
+    </>
   );
 };
 export default Home;
